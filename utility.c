@@ -63,5 +63,22 @@ void sync_temporary_files(char *temp_dir) {
  * @return a pointer to the next not . or .. directory, NULL if none remain
  */
 struct dirent *next_dir(struct dirent *entry, DIR *dir) {
-    return NULL;
+        if (!dir){
+        return NULL;
+    }
+
+	entry = readdir(dir);
+
+	if (!entry){
+        return NULL;
+    }
+
+    while (entry) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 || entry->d_type != DT_DIR){
+            entry = readdir(dir);
+        }
+        else {break;}
+    }
+
+	return entry;
 }

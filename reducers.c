@@ -67,7 +67,7 @@ void files_list_reducer(char *data_source, char *temp_files, char *output_file) 
         if(dir){
             entry = readdir(dir);
             while(entry != NULL){
-                if(entry->d_type==DT_REG){
+                if(entry->d_type==DT_REG && strcmp(entry->d_name,"step1_output")){
                     strcpy(add, temp_files);
                     strcat(add, "/");
                     strcat(add, entry->d_name);

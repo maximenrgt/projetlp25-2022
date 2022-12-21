@@ -52,6 +52,7 @@ bool path_to_file_exists(char *path) {
  * Use fsync and dirfd
  */
 void sync_temporary_files(char *temp_dir) {
+       fsync(dirfd(temp_dir));
 }
 
 

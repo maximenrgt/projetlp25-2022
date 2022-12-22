@@ -52,6 +52,15 @@ void parse_dir(char *path, FILE *output_file) {
  * @param list the list to be cleared
  */
 void clear_recipient_list(simple_recipient_t *list) {
+     while(list!=NULL){
+
+        int i=0;
+        while(i<STR_MAX_LEN){
+            list->email[i]='\0';
+            i++;
+        }
+        list=list->next;
+    }
 }
 
 /*!
@@ -61,7 +70,20 @@ void clear_recipient_list(simple_recipient_t *list) {
  * @return a pointer to the new recipient (to update the list with)
  */
 simple_recipient_t *add_recipient_to_list(char *recipient_email, simple_recipient_t *list) {
-    return NULL;
+    simple_recipient_t *p=(simple_recipient_t*)malloc(sizeof(simple_recipient_t));
+
+    strcpy(p->email, recipient_email);
+    p->next=NULL;
+    if(list==NULL){
+        return p;
+    }else{
+        simple_recipient_t *e=list;
+        while(e->next!=NULL){
+            e=e->next;
+        }
+        e->next=p;
+        return list;
+    }
 }
 
 /*!
@@ -75,6 +97,18 @@ simple_recipient_t *extract_emails(char *buffer, simple_recipient_t *list) {
     // 2. Go through buffer and extract e-mails
     // 3. Add each e-mail to list
     // 4. Return list
+    char recipient_email[STR_MAX_LEN];
+    FILE *f_in=fopen(buffer, "r");
+
+    if(f_in!=NULL){
+        fscanf(f_in, "%s ", recipient_email);
+        while(strcmp(recipient_email, "fin" )!=0){
+            list= add_recipient_to_list(recipient_email, list);
+            fscanf(f_in, "%s ", recipient_email);
+        }
+    }
+
+
     return list;
 }
 
@@ -84,6 +118,7 @@ simple_recipient_t *extract_emails(char *buffer, simple_recipient_t *list) {
  * @param destination the buffer into which the e-mail is copied
  */
 void extract_e_mail(char buffer[], char destination[]) {
+    strcpy(destination, buffer);
 }
 
 // Used to track status in e-mail (for multi lines To, Cc, and Bcc fields)
@@ -106,6 +141,100 @@ void parse_file(char *filepath, char *output) {
     // 6. Unlock file
     // 7. Close file
     // 8. Clear all allocated resources
+    char tmp[7]={'t', 'm', 'p', '.', 't', 'x','t'};
+    FILE *f_in=fopen(filepath, "r");
+    FILE *f_buffer=fopen(tmp, "w");
+    char word[STR_MAX_LEN];
+    char from[STR_MAX_LEN];
+    char buffer[STR_MAX_LEN];
+    simple_recipient_t *list=NULL;
+
+    // Dans un premier temps on récupère tout les emails qu'on stock provisoirement (prc que c'est demander de faire comme ça).
+
+    if(f_in==NULL){
+        printf("Error while downloading the file");
+        exit(1);
+    }else{
+
+        fscanf(f_in, "%s ", word);
+        fscanf(f_in, "%s\r\n", buffer);
+
+        if(strcmp(word, "From:")==0){
+
+            extract_e_mail(buffer,from);
+
+            fscanf(f_in, "%s ", word);
+            fscanf(f_in, "%s\r\n", buffer);
+
+        }
+        if(strcmp(word, "To:")==0){
+
+            fprintf(f_buffer, "%s ", buffer);
+
+            while (strcmp(word, "Subject:") != 0) {
+                fscanf(f_in, "%s\n ", word);
+
+                if (strcmp(word, "Subject:") != 0) {
+                    fprintf(f_buffer, "%s ", word);
+                }
+            }
+            while (strcmp(word, "Cc:") != 0) {
+                fscanf(f_in, "%s ", word);
+            }
+
+            fscanf(f_in, "%s\n", buffer);
+        }
+        if (strcmp(word, "Cc:") == 0) {
+
+            fprintf(f_buffer, "%s ", buffer);
+
+            while (strcmp(word, "Mime-Version:") != 0) {
+                fscanf(f_in, "%s\n ", word);
+
+                if (strcmp(word, "Mime-Version:") != 0) {
+                    fprintf(f_buffer, "%s ", word);
+                }
+            }
+            while (strcmp(word, "Bcc:") != 0) {
+                fscanf(f_in, "%s ", word);
+
+            }
+            fscanf(f_in, "%s\n", buffer);
+        }
+        if (strcmp(word, "Bcc:") == 0) {
+
+            fprintf(f_buffer, "%s ", buffer);
+
+            while (strcmp(word, "X-From:") != 0) {
+                fscanf(f_in, "%s\n ", word);
+
+                if (strcmp(word, "X-From:") != 0) {
+                    fprintf(f_buffer, "%s ", word);
+                }
+            }
+        }
+        fprintf(f_buffer, "fin");
+        fclose(f_buffer);
+        fclose(f_in);
+
+
+        list=extract_emails(tmp, list);
+        affichage(list);
+
+
+        FILE *f_out=fopen(output, "a"); // ouverture du fichier output pour écrire les emails dedans.
+        fprintf(f_out, "%s ", from);
+        while(list->next!=NULL ){
+            fprintf(f_out, "%s ", list->email);
+            list=list->next;
+        }
+        fprintf(f_out, "%s\n", list->email);
+
+        fclose(f_out);
+
+
+        clear_recipient_list(list);
+    }
 }
 
 /*!
@@ -138,9 +267,18 @@ void process_directory(char *object_directory, char *temp_files, char *user) {
  * Uses parse_file
  */
 
-
-void process_file(task_t *task) {
+void process_file(char *object_file, char *temp_files, char *user) {
     // 1. Check parameters
     // 2. Build full path to all parameters
     // 3. Call parse_file
+    char adresse_f_user[500];
+    strcpy(adresse_f_user, temp_files);
+    strcpy(adresse_f_user, "/");
+    strcpy(adresse_f_user, user);
+
+    FILE *f=fopen(adresse_f_user, "w");
+    if(f){
+        parse_file(object_file, fichier);
+    }
+    fclose(f);
 }
